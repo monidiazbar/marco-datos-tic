@@ -20,15 +20,15 @@ Para aplicar las transformaciones a datos descargados de [DANE - ndicadores bás
 2. **Obtener datos** → Carpeta (o Texto/CSV) y selecciona el archivo que está en `/data`
 3. **Abrir el Editor de Power Query** (Transformar datos)
 4. **Reemplazar el código generado**:
-   - En el panel izquierdo, selecciona la consulta
-   - Ve a la barra de fórmulas o al Editor Avanzado (vista Inicio → Editor avanzado)
-   - Copia y pega TODO el contenido del archivo `.m` que está en `/m-code`
-   - Ajusta la ruta del archivo en el primer paso si es necesario (dónde dice `File.Contents(...)`)
+   - En el panel izquierdo, seleccionar la consulta
+   - Ir a la barra de fórmulas o al Editor Avanzado (vista Inicio → Editor avanzado)
+   - Copiar y pegar TODO el contenido del archivo `.m` que está en `/m-code`
+   - Ajustar la ruta del archivo en el primer paso si es necesario (dónde dice `File.Contents(...)`)
 5. **Aplicar los cambios** (Cerrar y aplicar)
 
 ### Opción 2: Usar el archivo .pbix completo
 
-Si quieres ver el resultado final con todos los datos ya transformados:
+Para ver el resultado final con todos los datos ya transformados:
 
 1. Abrir el archivo `/dashboard/brecha_digital.pbix` directamente en Power BI Desktop
 2. Explorar las pestañas y visualizaciones
