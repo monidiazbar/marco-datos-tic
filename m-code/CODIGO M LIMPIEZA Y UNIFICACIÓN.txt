@@ -1,0 +1,183 @@
+let
+    /* =======================================================================
+       1. FUNCIÓN DE PROCESAMIENTO
+       ======================================================================= */
+    FxProcesarHoja = (TablaHoja as table) => let
+        
+        // 1. Limpieza inicial
+        #"Tipo cambiado" = Table.TransformColumnTypes(TablaHoja, List.Transform(Table.ColumnNames(TablaHoja), each {_, type any})),
+        
+        Personalizado1 = Table.Skip(#"Tipo cambiado", each 
+            ([Column1] <> "DEPARTAMENTO" and [Column1] <> "ÁREA" and [Column1] <> "AREA")
+        ),
+        
+        #"Rellenar hacia abajo" = Table.FillDown(Personalizado1,{"Column1"}),
+        #"Tabla transpuesta" = Table.Transpose(#"Rellenar hacia abajo"),
+        #"Rellenar hacia abajo1" = Table.FillDown(#"Tabla transpuesta",{"Column1"}),
+        
+        // 2. Detección de columna ancla "Cve"
+        ColumnaCve = List.Select(Table.ColumnNames(#"Rellenar hacia abajo1"), each 
+            List.Contains(Table.Column(#"Rellenar hacia abajo1", _), "Cve") or 
+            List.Contains(Table.Column(#"Rellenar hacia abajo1", _), "CVe") or 
+            List.Contains(Table.Column(#"Rellenar hacia abajo1", _), "Cve c/")
+        ){0},
+        
+        FiltradoFilas = Table.SelectRows(#"Rellenar hacia abajo1", each List.Contains({"DEPARTAMENTO", "TOTAL", "AREA", "ÁREA", "DEPARTAMENTO AREA", "DEPARTAMENTO ÁREA", "Rango de edad", "Nivel educativo", "SEXO", "Sexo", "NIVEL", "EDAD", null}, Record.Field(_, ColumnaCve))),
+        
+        ColumnaDatos = Table.ColumnNames(FiltradoFilas){List.PositionOf(Table.ColumnNames(FiltradoFilas), ColumnaCve) + 1},
+        TablaSinVacios = Table.SelectRows(FiltradoFilas, each Record.Field(_, ColumnaDatos) <> null),
+        
+        // 3. Encabezados
+        TablaConEncabezados = let
+            Tabla = TablaSinVacios,
+            Cols = Table.ColumnNames(Tabla),
+            Indice = List.PositionOf(List.Transform(Cols, each List.AnyTrue(List.Transform(Table.Column(Tabla, _), each try (Number.From(_) <> null) otherwise false))), true),
+            N = if Indice <= 0 then 2 else Indice,
+            ColsTarget = List.FirstN(Cols, N),
+            
+            Unida = Table.CombineColumns(Tabla, ColsTarget, each Text.Combine(List.Distinct(List.Select(List.Transform(_, Text.From), each _ <> null and _ <> "" and Text.Upper(_) <> "TOTAL")), " "), "Encabezado")
+        in
+            Unida,
+            
+        TablaVertical = Table.Transpose(TablaConEncabezados),
+        EncabezadosPromovidos = Table.PromoteHeaders(TablaVertical, [PromoteAllScalars=true]),
+        
+        // Limpieza Higiénica
+        NombresLimpios = Table.TransformColumnNames(EncabezadosPromovidos, each Text.Upper(Text.Trim(Text.Clean(_)))),
+
+        // -------------------------------------------------------------------
+        // PASO CLAVE 1: ESTANDARIZACIÓN DE NOMBRES
+        // -------------------------------------------------------------------
+        RenombrarColumnas = Table.RenameColumns(NombresLimpios, {
+            {"DEPARTAMENTO AREA", "AREA"}, 
+            {"DEPARTAMENTO ÁREA", "AREA"},
+            {"ÁREA", "AREA"},
+            {"AREA_1", "SEXO"},
+            {"ÁREA_1", "SEXO"},
+            {"NIVEL", "NIVEL EDUCATIVO"},
+            {"EDAD", "RANGO DE EDAD"},
+            {"GRUPOS DE EDAD", "RANGO DE EDAD"}
+        }, MissingField.Ignore),
+
+        // Eliminar columnas basura
+        ColsBasura = List.Intersect({Table.ColumnNames(RenombrarColumnas), {"DEPARTAMENTO AREA", "DEPARTAMENTO ÁREA", "CV", "CVE", "CVE C/"}}),
+        TablaLimpiaBasura = Table.RemoveColumns(RenombrarColumnas, ColsBasura),
+
+        // -------------------------------------------------------------------
+        // PASO CLAVE 2: CORRECCIÓN DE CONTENIDO (SOLUCIÓN DEFINITIVA)
+        // -------------------------------------------------------------------
+        
+        // A. EVITAR ERROR "NO SE ENCUENTRA COLUMNA":
+        // Aseguramos que existan DEPARTAMENTO y AREA antes de operar. Si no existen, las creamos vacías.
+        TablaBase = let
+            t1 = if Table.HasColumns(TablaLimpiaBasura, "DEPARTAMENTO") then TablaLimpiaBasura else Table.AddColumn(TablaLimpiaBasura, "DEPARTAMENTO", each null),
+            t2 = if Table.HasColumns(t1, "AREA") then t1 else Table.AddColumn(t1, "AREA", each null)
+        in
+            t2,
+
+        // B. CORRECCIÓN LÓGICA (CABECERA -> AREA)
+        CorrigeDepto = Table.AddColumn(TablaBase, "DEPARTAMENTO_REAL", each 
+            let 
+                v = if [DEPARTAMENTO] = null then "" else Text.Upper(Text.From([DEPARTAMENTO])),
+                EsIntruso = Text.StartsWith(v, "CABECERA") or Text.StartsWith(v, "CENTROS POBLADOS")
+            in
+                if EsIntruso then "Total Nacional" else [DEPARTAMENTO]
+        ),
+        
+        CorrigeArea = Table.AddColumn(CorrigeDepto, "AREA_REAL", each 
+            let 
+                v = if [DEPARTAMENTO] = null then "" else Text.Upper(Text.From([DEPARTAMENTO])),
+                EsIntruso = Text.StartsWith(v, "CABECERA") or Text.StartsWith(v, "CENTROS POBLADOS")
+            in
+                if EsIntruso then [DEPARTAMENTO] // Movemos Cabecera a Area
+                else [AREA] // Mantenemos el Area original
+        ),
+
+        // C. REEMPLAZO FINAL
+        ColsAEliminar = {"DEPARTAMENTO", "AREA"},
+        EliminarViejas = Table.RemoveColumns(CorrigeArea, ColsAEliminar),
+        RenombrarFinal = Table.RenameColumns(EliminarViejas, {{"DEPARTAMENTO_REAL", "DEPARTAMENTO"}, {"AREA_REAL", "AREA"}}),
+
+        // -------------------------------------------------------------------
+        // PASO CLAVE 3: GARANTIZAR DIMENSIONES
+        // -------------------------------------------------------------------
+        DimensionesRequeridas = {"DEPARTAMENTO", "AREA", "SEXO", "RANGO DE EDAD", "NIVEL EDUCATIVO"},
+        
+        AsegurarColumnas = List.Accumulate(DimensionesRequeridas, RenombrarFinal, (tabla, colName) => 
+            if Table.HasColumns(tabla, colName) then tabla 
+            else Table.AddColumn(tabla, colName, each "No Aplica")
+        ),
+
+        RellenoDimensiones = Table.FillDown(AsegurarColumnas, DimensionesRequeridas),
+        ReemplazoNulos = Table.ReplaceValue(RellenoDimensiones, null, "No Aplica", Replacer.ReplaceValue, DimensionesRequeridas),
+
+        // -------------------------------------------------------------------
+        // PASO CLAVE 4: CORRECCIÓN FINA
+        // -------------------------------------------------------------------
+        FixDepto = Table.ReplaceValue(ReemplazoNulos, "No Aplica", "Total Nacional", Replacer.ReplaceValue, {"DEPARTAMENTO"}),
+        FixTotales = Table.ReplaceValue(FixDepto, "Total Nacional", "Total", Replacer.ReplaceValue, {"SEXO", "AREA", "RANGO DE EDAD", "NIVEL EDUCATIVO"}),
+
+        // -------------------------------------------------------------------
+        // PASO CLAVE 5: UNPIVOT
+        // -------------------------------------------------------------------
+        ColsTabla = Table.ColumnNames(FixTotales),
+        ColValorCheck = if List.Count(ColsTabla) > 5 then ColsTabla{5} else List.Last(ColsTabla),
+        FiltroFinal = Table.SelectRows(FixTotales, each Record.Field(_, ColValorCheck) <> null),
+
+        // Normalización de texto
+        ColsTexto = List.Intersect({DimensionesRequeridas, Table.ColumnNames(FiltroFinal)}),
+        TextoNormalizado = Table.TransformColumns(FiltroFinal, 
+            List.Transform(ColsTexto, each {_, each Text.Proper(Text.Trim(Text.Clean(Text.From(_)))), type text})
+        ),
+        
+        ColumnasActuales = Table.ColumnNames(TextoNormalizado),
+        ColumnasAUnpivotear = List.Difference(ColumnasActuales, DimensionesRequeridas),
+        
+        Unpivot = Table.Unpivot(TextoNormalizado, ColumnasAUnpivotear, "INDICADOR", "VALOR"),
+        
+        FiltroNumerico = Table.SelectRows(Unpivot, each try (Number.From([VALOR]) <> null) otherwise false),
+
+        OrdenFinal = Table.SelectColumns(FiltroNumerico, List.Combine({DimensionesRequeridas, {"INDICADOR", "VALOR"}}))
+
+    in
+        OrdenFinal,
+
+    /* =======================================================================
+       3. ORQUESTACIÓN PRINCIPAL
+       ======================================================================= */
+    
+    // RUTA
+    RutaArchivo = "C:\Users\diego\Downloads\Anexos_TIC_hogares_2019.xlsx",
+    
+    NombreArchivo = Text.AfterDelimiter(RutaArchivo, "\", {0, RelativePosition.FromEnd}),
+    AnioDetectado = Text.Select(NombreArchivo, {"0".."9"}),
+
+    // CARGA
+    Fuente = Excel.Workbook(File.Contents(RutaArchivo), null, true),
+    SoloHojasC = Table.SelectRows(Fuente, each ([Kind] = "Sheet") and Text.StartsWith([Item], "C.")),
+    
+    // PROCESAMIENTO
+    Procesamiento = Table.AddColumn(SoloHojasC, "DatosTransformados", each FxProcesarHoja([Data])),
+    
+    // METADATA
+    AgregarMetadata = Table.AddColumn(Procesamiento, "TablaFinal", each 
+        let 
+            TablaBase = [DatosTransformados],
+            ConAnio = Table.AddColumn(TablaBase, "FECHA", each #date(Number.From(AnioDetectado), 1, 1), type date),
+            
+            // Lógica C01, C02...
+            NumeroSolo = Text.Select([Item], {"0".."9"}),
+            NumeroPadeado = Text.PadStart(NumeroSolo, 2, "0"),
+            NombreModuloOrdenado = "C" & NumeroPadeado,
+
+            ConModulo = Table.AddColumn(ConAnio, "MODULO", each NombreModuloOrdenado, type text),
+            ConCodigo = Table.AddColumn(ConModulo, "CODIGO_TABLA", each NombreModuloOrdenado & " " & AnioDetectado, type text)
+        in
+            ConCodigo
+    ),
+    
+    // CONSOLIDACIÓN
+    Consolidado = Table.Combine(AgregarMetadata[TablaFinal]),
+    #"Tipo cambiado" = Table.TransformColumnTypes(Consolidado,{{"VALOR", type number}})
+in
+    #"Tipo cambiado"
