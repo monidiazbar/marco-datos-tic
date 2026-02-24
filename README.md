@@ -14,7 +14,7 @@ Proyecto ETL en lenguaje M (Power Query) para analizar datos de brecha digital e
 
 ### Opción 1: Usar solo el código M (desde cero)
 
-Para aplicar las transformaciones a datos descargados de [DANE - ndicadores básicos de TIC en Hogares - Históricos](https://www.dane.gov.co/index.php/estadisticas-por-tema/tecnologia-e-innovacion/tecnologias-de-la-informacion-y-las-comunicaciones-tic/indicadores-basicos-de-tic-en-hogares/informacion-historica):
+Para aplicar las transformaciones a datos descargados de [DANE - ndicadores básicos de TIC en Hogares - Históricos](https://www.dane.gov.co/index.php/estadisticas-por-tema/tecnologia-e-innovacion/tecnologias-de-la-informacion-y-las-comunicaciones-tic/indicadores-basicos-de-tic-en-hogares/informacion-historica) a partir del año 2019:
 
 1. **Abrir Power BI Desktop**
 2. **Obtener datos** → Carpeta (o Texto/CSV) y selecciona el archivo que está en `/data`
