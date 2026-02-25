@@ -2,7 +2,7 @@
 Marco de trabajo para la operativización de datos de la brecha digital en Colombia, producidos por el DANE para ser consumidos por un dashboard de Power BI
 # Brecha Digital Colombia
 
-Proyecto ETL en lenguaje M (Power Query) para analizar datos de brecha digital en Colombia.
+Proyecto ETL en lenguaje M (Power Query) para analizar datos de brecha digital en Colombia, a partir de los datos oficiales del DANE.
 
 ## 📁 Contenido
 
@@ -24,8 +24,9 @@ Para aplicar las transformaciones a datos descargados de [DANE - ndicadores bás
    - En el panel izquierdo, seleccionar la consulta
    - Ir a la barra de fórmulas o al Editor Avanzado (vista Inicio → Editor avanzado)
    - Copiar y pegar TODO el contenido del archivo `.m` que está en `/m-code`
-   - Ajustar la ruta del archivo en el primer paso si es necesario (dónde dice `File.Contents(...)`)
+   - Ajustar la ruta del archivo en el tercer paso: ORQUESTACIÓN PRINICIPAL (en la variable RutaArchivo, línea 150)
 6. **Aplicar los cambios** (Cerrar y aplicar)
+7. **Ajustar la ruta del archivo para cada tabla que se vaya a cargar**
 
 ### Opción 2: Usar el archivo .pbix completo
 
