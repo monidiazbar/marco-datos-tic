@@ -49,6 +49,21 @@ Los archivos en `/m-code` contienen:
 
 Cada paso en M está numerado y comentado con la función que hace cada línea.
 
+### Entendiendo el Dashboard (Power BI)
+
+El dashboard presenta 5 páginas para visualizar las diferentes dimensiones de la brecha digital, además de análisis geográfico y demográfico:
+
+**Dimensión 1 de infraestructura y tenencia:** Se agrupan los módulos referentes a la posesión de activos físicos (tablas C.1, C.2, C.5). Se analiza la disponibilidad de dispositivos como computador de escritorio/portátil o teléfono inteligente.
+
+**Dimensión 2 de comportamiento:** Describe la dinámica de interacción entre el usuario y la tecnología (tablas C.3, C.4, C.8, C.9, C.10). Analiza cómo, dónde y con qué frecuencia se conectan las personas, permitiendo perfilar los hábitos de consumo digital y la intensidad de uso en la vida cotidiana.
+
+**Dimensión 3 de cualidad y apropiación:** Aquí se encuentra el núcleo del análisis de productividad digital (tablas C.6, C16/18) que analizan las actividades de uso y las competencias técnicas, evaluando si la tecnología se utiliza para el desarrollo económico y educativo o para actividades de ocio.
+
+**Dimensión 4 de barreras y brecha digital:** Los indicadores de las tablas C.11, C.12 y C.13 examinan las razones explícitas de los hogares para no acceder a las TIC, clasificándolas en barreras económicas, de cobertura o culturales.
+
+**Dimensión 5 de caracterización y demografía:** Los indicadores de las tablas C.14 y C.15 permiten segmentar la brecha digital según género, edad, nivel educativo y ubicación geográfica, evidenciando las desigualdades sociales.
+
+
 Este trabajo fue desarrollado como trabajo de grado para la Especialización en Analítica de Datos de CUN Por:
 
 _Autores:_
