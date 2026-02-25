@@ -19,12 +19,13 @@ Para aplicar las transformaciones a datos descargados de [DANE - ndicadores bás
 1. **Abrir Power BI Desktop**
 2. **Obtener datos** → Carpeta (o Texto/CSV) y selecciona el archivo que está en `/data`
 3. **Abrir el Editor de Power Query** (Transformar datos)
-4. **Reemplazar el código generado**:
+4. **Generar consulta en blanco** (Obtener datos)
+5. **Reemplazar el código generado**:
    - En el panel izquierdo, seleccionar la consulta
    - Ir a la barra de fórmulas o al Editor Avanzado (vista Inicio → Editor avanzado)
    - Copiar y pegar TODO el contenido del archivo `.m` que está en `/m-code`
    - Ajustar la ruta del archivo en el primer paso si es necesario (dónde dice `File.Contents(...)`)
-5. **Aplicar los cambios** (Cerrar y aplicar)
+6. **Aplicar los cambios** (Cerrar y aplicar)
 
 ### Opción 2: Usar el archivo .pbix completo
 
@@ -46,4 +47,13 @@ Los archivos en `/m-code` contienen:
 - **Carga**: Estructura final que se carga al modelo de Power BI
 
 Cada paso en M está numerado y comentado con la función que hace cada línea.
+
+Este trabajo fue desarrollado como trabajo de grado para la Especialización en Analítica de Datos de CUN Por:
+
+_Autores:_
+
+- Mónica Díaz Barbosa
+- Diego Pontón Ramos
+
+2026
 
